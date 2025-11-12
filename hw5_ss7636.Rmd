@@ -1,0 +1,58 @@
+---
+title: "hw5_ss7636"
+output: html_document
+date: "2025-11-10"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(rvest)
+
+```
+
+
+Problem 1
+```{r}
+bday_sim = function(n_room) {
+  birthdays = sample(1:365, n_room, replace = TRUE)
+  repeated_bday = length(unique(birthdays)) < n_room
+  repeated_bday
+}
+```
+
+```{r}
+bday_sim_results =
+  expand_grid(
+    bdays = 2:50,
+    iter = 1:10000
+  ) |> 
+  mutate(
+    result = map_lgl(bdays, bday_sim)
+  ) |> 
+  group_by(
+    bdays
+  ) |> 
+  summarize(
+    prob_repeat = mean(result)
+  )
+
+bday_sim_results
+
+```
+
+```{r}
+bday_sim_results |> 
+  ggplot(aes(x = bdays, y = prob_repeat)) +
+  geom_point() +
+  geom_line()
+```
+
+We can see that the probability of getting a repeat birthday exponentially increases as the number of students starts to increase, which makes sense. The probability is almost 0 at 2 students and the probability is almost 1 at 50 students.
+
+Problem 2
+
+```{r}
+
+```
+
