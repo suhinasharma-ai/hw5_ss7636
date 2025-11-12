@@ -8,6 +8,23 @@ date: "2025-11-10"
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(rvest)
+library(broom)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
 
 ```
 
@@ -53,6 +70,56 @@ We can see that the probability of getting a repeat birthday exponentially incre
 Problem 2
 
 ```{r}
+n = 30
+sigma = 5
+mu = 0:6
+n_sim = 5000
+alpha = 0.05
 
+results = expand_grid(mu = mu, sim = 1:n_sim) |> 
+  mutate(
+    data = map(mu, ~rnorm(n, mean = .x, sd = sigma)),
+    ttest = map(data, ~ broom::tidy(t.test(.x, mu = 0)))
+  ) |> 
+  unnest(ttest) |> 
+  select(mu, estimate, p.value)
+
+summary_results = results |> 
+  group_by(mu) |> 
+  summarize(
+    power = mean(p.value < alpha),
+    mean_est = mean(estimate),
+    mean_est_rejected = mean(estimate[p.value < alpha])
+  )
 ```
+
+```{r}
+ggplot(summary_results, aes(x = mu, y = power)) +
+  geom_line() +
+  geom_point() +
+  labs(
+    x = "True Mean (μ)",
+    y = "Power",
+    title = "Power Increases with Effect Size"
+  ) 
+```
+As the true mean increases, power increases. When the true mean is 0, the power is around 0.05. When the true mean reaches around 5, the power is 1.
+
+
+```{r}
+summary_results |> 
+  ggplot(aes(x = mu)) +
+  geom_line(aes(y = mean_est), color = "black") +
+  geom_line(aes(y = mean_est_rejected), color = "red", linetype = "dashed") +
+  geom_point(aes(y = mean_est), color = "black") +
+  geom_point(aes(y = mean_est_rejected), color = "red") +
+  labs(
+    x = "True Mean (μ)",
+    y = "Average Estimated Mean (μ̂)",
+    title = "Bias of Estimates When Selecting Only Significant Results",
+    subtitle = "Black = all samples, Red = only significant (p < 0.05)"
+  ) 
+```
+
+The average estimated mean is are slightly larger than the true mean, especially as the true mean is less than 3. They start to become more equal as the true mean increases. This might be because only unusually large estimates (due to sampling variability) cross the significance threshold.
 
