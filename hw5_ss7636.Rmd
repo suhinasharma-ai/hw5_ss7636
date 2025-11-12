@@ -123,3 +123,78 @@ summary_results |>
 
 The average estimated mean is are slightly larger than the true mean, especially as the true mean is less than 3. They start to become more equal as the true mean increases. This might be because only unusually large estimates (due to sampling variability) cross the significance threshold.
 
+Problem 3
+
+```{r}
+homicide = 
+ read_csv("homicide-data.csv", na = c("NA",".", "")) |> 
+  janitor :: clean_names() 
+homicide
+```
+
+This dataset contains 52,179 rows and 12 columns. This data contains The data included the location of the killing, date of the report, whether an arrest was made and, basic demographic information about each victim.
+
+```{r}
+homicide_city_state = 
+  homicide |> 
+  mutate(
+    city_state = paste(city, state, sep = ", ")
+  )
+homicide_city_state
+```
+
+```{r}
+city_summary = homicide_city_state |>
+  mutate(
+    unsolved = disposition %in% c("Closed without arrest", "Open/No arrest")
+  ) |> 
+  group_by(city_state) |> 
+  summarize(
+    total = n(),
+    unsolved_count = sum(unsolved),
+    .groups = "drop"
+  )
+
+city_summary
+  
+```
+
+```{r}
+baltimore_test <- 
+  city_summary |> 
+  filter(city_state == "Baltimore, MD") |>  
+  summarize(test = list(prop.test(unsolved_count, total))) |>  
+  pull(test) |>
+  (\(x) broom::tidy(x[[1]]))() |>
+  select(estimate, conf.low, conf.high) 
+
+baltimore_test
+```
+
+```{r}
+city_props = city_summary |> 
+  mutate(
+    prop_test = map2(unsolved_count, total, ~ prop.test(.x, .y) |> 
+                       broom :: tidy())
+  ) |> 
+  unnest(prop_test) |> 
+  select(city_state, estimate, conf.low, conf.high)
+
+city_props
+```
+
+```{r city-plot, fig.height=100, fig.width=10}
+city_props |> 
+  arrange(desc(estimate)) |> 
+  mutate(city_state = factor(city_state, levels = city_state)) |> 
+  ggplot(aes(x = city_state, y = estimate)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high)) +
+  coord_flip() +
+  labs(
+    x = "City",
+    y = "Proportion of Unsolved Homicides",
+    title = "Estimated Proportion of Unsolved Homicides by City"
+  ) 
+```
+
