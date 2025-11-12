@@ -132,7 +132,7 @@ homicide =
 homicide
 ```
 
-This dataset contains 52,179 rows and 12 columns. This data contains The data included the location of the killing, date of the report, whether an arrest was made and, basic demographic information about each victim.
+This dataset contains 52,179 rows and 12 columns. This data contains important information such as the location of the killing, date of the report, whether an arrest was made and, basic demographic information about each victim.
 
 ```{r}
 homicide_city_state = 
